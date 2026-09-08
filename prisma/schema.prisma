@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Perfil {
+  ADMIN
+  GESTOR
+  OPERADOR
+}
+
+enum TipoMovimentacao {
+  ENTRADA
+  TRANSFERENCIA
+  SAIDA
+}
+
+enum StatusFaturamento {
+  ABERTO
+  FECHADO
+}
+
+model Usuario {
+  id         String           @id @default(cuid())
+  nome       String
+  email      String           @unique
+  senhaHash  String
+  criadoEm   DateTime         @default(now())
+  empresas   UsuarioEmpresa[]
+}
+
+// Tabela de acesso: um usuário pode ter acesso a várias empresas (multi-tenant),
+// e cada acesso tem seu próprio perfil de permissão.
+model UsuarioEmpresa {
+  id         String  @id @default(cuid())
+  usuario    Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  empresa    Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId  String
+  perfil     Perfil  @default(OPERADOR)
+
+  @@unique([usuarioId, empresaId])
+}
+
+model Empresa {
+  id            String           @id @default(cuid())
+  nome          String
+  slug          String           @unique
+  contatoNome   String?
+  contatoEmail  String?
+  ativo         Boolean          @default(true)
+  criadoEm      DateTime         @default(now())
+
+  usuarios      UsuarioEmpresa[]
+  produtos      Produto[]
+  estoques      Estoque[]
+  historicos    Historico[]
+  avarias       Avaria[]
+  tiposCobranca TipoCobranca[]
+  faturamentos  Faturamento[]
+}
+
+model Produto {
+  id           String   @id @default(cuid())
+  empresa      Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId    String
+  sku          String
+  descricao    String
+  familia      String?
+  embalagem    String   @default("Tambor metálico")
+  capacidadeL  Float?
+  tbPorPallet  Int      @default(4)
+  cubagemM3    Float?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+
+  estoques   Estoque[]
+  historicos Historico[]
+  avarias    Avaria[]
+
+  @@unique([empresaId, sku])
+}
+
+// Posição atual de estoque: cada linha é um lote em um endereço específico.
+model Estoque {
+  id               String    @id @default(cuid())
+  empresa          Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId        String
+  produto          Produto   @relation(fields: [produtoId], references: [id])
+  produtoId        String
+  lote             String
+  dataFabricacao   DateTime?
+  validade         DateTime?
+  quantidadeTb     Int
+  bloco            String
+  rua              String
+  face             String
+  criadoEm         DateTime  @default(now())
+  atualizadoEm     DateTime  @updatedAt
+
+  @@index([empresaId, produtoId])
+  @@index([empresaId, validade])
+}
+
+// Log imutável de toda movimentação (entrada / transferência / saída).
+model Historico {
+  id            String            @id @default(cuid())
+  empresa       Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId     String
+  produto       Produto           @relation(fields: [produtoId], references: [id])
+  produtoId     String
+  lote          String
+  tipo          TipoMovimentacao
+  quantidadeTb  Int
+  origem        String?
+  destino       String?
+  operador      String
+  observacao    String?
+  criadoEm      DateTime          @default(now())
+
+  @@index([empresaId, criadoEm])
+}
+
+model Avaria {
+  id            String   @id @default(cuid())
+  empresa       Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId     String
+  produto       Produto  @relation(fields: [produtoId], references: [id])
+  produtoId     String
+  lote          String
+  quantidadeTb  Int
+  causa         String
+  operador      String
+  observacao    String?
+  criadoEm      DateTime @default(now())
+
+  @@index([empresaId, criadoEm])
+}
+
+model TipoCobranca {
+  id            String  @id @default(cuid())
+  empresa       Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId     String
+  nome          String
+  unidade       String
+  valorUnitario Float
+  ativo         Boolean @default(true)
+}
+
+model Faturamento {
+  id          String            @id @default(cuid())
+  empresa     Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId   String
+  periodo     String
+  valorTotal  Float             @default(0)
+  status      StatusFaturamento @default(ABERTO)
+  geradoEm    DateTime          @default(now())
+}
