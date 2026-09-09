@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 type Produto = { id: string; sku: string; descricao: string; tbPorPallet: number };
 type EstoqueItem = {
@@ -10,7 +10,6 @@ type EstoqueItem = {
   bloco: string;
   rua: string;
   face: string;
-  produtoId: string;
   produto: { sku: string };
 };
 
@@ -32,28 +31,6 @@ export default function MovimentacaoTabs({
   const [sucesso, setSucesso] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  // Produto selecionado em cada aba, só pra filtrar a lista de lotes — não é enviado no form.
-  const [produtoTransfId, setProdutoTransfId] = useState('');
-  const [produtoSaidaId, setProdutoSaidaId] = useState('');
-
-  // Lista de produtos que têm estoque disponível, sem repetir.
-  const produtosComEstoque = useMemo(() => {
-    const mapa = new Map<string, { id: string; sku: string }>();
-    for (const e of estoques) {
-      if (!mapa.has(e.produtoId)) mapa.set(e.produtoId, { id: e.produtoId, sku: e.produto.sku });
-    }
-    return Array.from(mapa.values()).sort((a, b) => a.sku.localeCompare(b.sku));
-  }, [estoques]);
-
-  const lotesTransferencia = useMemo(
-    () => estoques.filter((e) => !produtoTransfId || e.produtoId === produtoTransfId),
-    [estoques, produtoTransfId]
-  );
-  const lotesSaida = useMemo(
-    () => estoques.filter((e) => !produtoSaidaId || e.produtoId === produtoSaidaId),
-    [estoques, produtoSaidaId]
-  );
-
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
     action: (fd: FormData) => Promise<void>
@@ -71,8 +48,6 @@ export default function MovimentacaoTabs({
       await action(fd);
       setSucesso('Confirmado! Movimentação registrada com sucesso.');
       form.reset();
-      setProdutoTransfId('');
-      setProdutoSaidaId('');
       window.setTimeout(() => setSucesso(''), 4000);
     } catch (e: any) {
       setErro(e?.message || 'Erro ao registrar movimentação.');
@@ -192,31 +167,15 @@ export default function MovimentacaoTabs({
         <form onSubmit={(e) => handleSubmit(e, transferenciaAction)}>
           <div className="form-grid g2">
             <div className="field">
-              <label>Produto / SKU</label>
-              <select
-                value={produtoTransfId}
-                onChange={(e) => setProdutoTransfId(e.target.value)}
-              >
-                <option value="">Todos os produtos</option>
-                {produtosComEstoque.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.sku}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
               <label>Lote em estoque (origem)</label>
-              <select name="estoqueOrigemId" required key={produtoTransfId}>
-                {lotesTransferencia.map((e) => (
+              <select name="estoqueOrigemId" required>
+                {estoques.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
+                    {e.produto.sku} · {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
                   </option>
                 ))}
               </select>
             </div>
-          </div>
-          <div className="form-grid g2">
             <div className="field">
               <label>Quantidade (unidade)</label>
               <input name="quantidadeTb" type="number" placeholder="0" required />
@@ -253,22 +212,11 @@ export default function MovimentacaoTabs({
         <form onSubmit={(e) => handleSubmit(e, saidaAction)}>
           <div className="form-grid g3">
             <div className="field">
-              <label>Produto / SKU</label>
-              <select value={produtoSaidaId} onChange={(e) => setProdutoSaidaId(e.target.value)}>
-                <option value="">Todos os produtos</option>
-                {produtosComEstoque.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.sku}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
               <label>Lote em estoque</label>
-              <select name="estoqueId" required key={produtoSaidaId}>
-                {lotesSaida.map((e) => (
+              <select name="estoqueId" required>
+                {estoques.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
+                    {e.produto.sku} · {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
                   </option>
                 ))}
               </select>
@@ -277,10 +225,10 @@ export default function MovimentacaoTabs({
               <label>Quantidade (unidade)</label>
               <input name="quantidadeTb" type="number" placeholder="0" required />
             </div>
-          </div>
-          <div className="field">
-            <label>Observação / NF</label>
-            <input name="observacao" placeholder="NF 123456" />
+            <div className="field">
+              <label>Observação / NF</label>
+              <input name="observacao" placeholder="NF 123456" />
+            </div>
           </div>
           <div className="btn-row">
             <button className="btn primary" type="submit" disabled={enviando}>

@@ -40,7 +40,7 @@ export default async function DashboardPage({ params }: { params: { empresaId: s
         <div className="metric">
           <div className="lbl">Estoque total</div>
           <div className="val">{totalTb}</div>
-          <div className="unit">tambores</div>
+          <div className="unit">unidades</div>
         </div>
         <div className="metric">
           <div className="lbl">Lotes em posição</div>
@@ -76,7 +76,7 @@ export default async function DashboardPage({ params }: { params: { empresaId: s
                   <th>SKU</th>
                   <th>Lote</th>
                   <th>De → Para</th>
-                  <th>TB</th>
+                  <th>Unid.</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,8 +1,11 @@
 import { prisma } from '@/lib/prisma';
+import ExcluirLancamentoButton from './ExcluirLancamentoButton';
+import { excluirLancamento } from './actions';
 
 export default async function HistoricoPage({ params }: { params: { empresaId: string } }) {
+  const { empresaId } = params;
   const historico = await prisma.historico.findMany({
-    where: { empresaId: params.empresaId },
+    where: { empresaId },
     include: { produto: true },
     orderBy: { criadoEm: 'desc' },
     take: 200
@@ -27,14 +30,15 @@ export default async function HistoricoPage({ params }: { params: { empresaId: s
                 <th>Lote</th>
                 <th>De</th>
                 <th>Para</th>
-                <th>TB</th>
+                <th>Unid.</th>
                 <th>Operador</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {historico.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="empty">
+                  <td colSpan={9} className="empty">
                     Nenhuma movimentação registrada ainda.
                   </td>
                 </tr>
@@ -49,6 +53,9 @@ export default async function HistoricoPage({ params }: { params: { empresaId: s
                   <td className="code">{h.destino ?? '—'}</td>
                   <td>{h.quantidadeTb}</td>
                   <td>{h.operador}</td>
+                  <td>
+                    <ExcluirLancamentoButton action={excluirLancamento.bind(null, empresaId, h.id)} />
+                  </td>
                 </tr>
               ))}
             </tbody>

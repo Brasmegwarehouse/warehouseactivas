@@ -43,6 +43,7 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
                 <option>Tambor metálico</option>
                 <option>IBC / Tote</option>
                 <option>Bag / Big Bag</option>
+                <option>Sacaria</option>
               </select>
             </div>
             <div className="field">
@@ -50,7 +51,7 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
               <input name="capacidadeL" type="number" placeholder="200" />
             </div>
             <div className="field">
-              <label>TB por pallet</label>
+              <label>Quantidade por pallet</label>
               <input name="tbPorPallet" type="number" defaultValue={4} />
             </div>
           </div>
@@ -71,7 +72,7 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
                 <th>SKU</th>
                 <th>Descrição</th>
                 <th>Embalagem</th>
-                <th>TB/Pallet</th>
+                <th>Qtd/Pallet</th>
                 <th>Status</th>
               </tr>
             </thead>
