@@ -1,4 +1,4 @@
-import { exigirAcessoEmpresa } from '@/lib/tenant';
+import { exigirAcessoEmpresa, usuarioEhAdmin } from '@/lib/tenant';
 import Sidebar from '@/components/Sidebar';
 
 export default async function EmpresaLayout({
@@ -9,6 +9,7 @@ export default async function EmpresaLayout({
   params: { empresaId: string };
 }) {
   const { usuario, empresa, perfil } = await exigirAcessoEmpresa(params.empresaId);
+  const ehAdmin = await usuarioEhAdmin(usuario.id);
 
   return (
     <div id="view-app" style={{ display: 'block' }}>
@@ -18,6 +19,7 @@ export default async function EmpresaLayout({
           empresaNome={empresa.nome}
           usuarioNome={usuario.name}
           perfil={perfil}
+          ehAdmin={ehAdmin}
         />
         <div className="main">{children}</div>
       </div>
