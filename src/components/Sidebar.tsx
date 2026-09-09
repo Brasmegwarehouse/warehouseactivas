@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -32,18 +33,21 @@ export default function Sidebar({
   empresaId,
   empresaNome,
   usuarioNome,
-  perfil
+  perfil,
+  ehAdmin
 }: {
   empresaId: string;
   empresaNome: string;
   usuarioNome: string;
   perfil: string;
+  ehAdmin?: boolean;
 }) {
   const pathname = usePathname();
 
   return (
     <div className="sidebar" id="sidebar">
       <div className="sb-brand">
+        <Image src="/logo-brasmeg.png" alt="Brasmeg" width={28} height={28} />
         <div className="mark">
           Warehouse<span>One</span>
         </div>
@@ -76,6 +80,19 @@ export default function Sidebar({
           })}
         </div>
       ))}
+
+      {ehAdmin && (
+        <div className="nav-group">
+          <div className="nav-label">Administração</div>
+          <Link
+            href="/empresas/nova"
+            className={`nav-item ${pathname === '/empresas/nova' ? 'active' : ''}`}
+          >
+            <span className="ic">+</span>
+            Nova empresa
+          </Link>
+        </div>
+      )}
 
       <div className="sb-foot">
         <div className="av">
