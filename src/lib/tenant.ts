@@ -16,6 +16,15 @@ export async function getEmpresasDoUsuario(usuarioId: string) {
   });
 }
 
+// Retorna true se o usuário for ADMIN em pelo menos uma empresa.
+// Usado para liberar ações administrativas globais, como criar novas empresas.
+export async function usuarioEhAdmin(usuarioId: string) {
+  const acesso = await prisma.usuarioEmpresa.findFirst({
+    where: { usuarioId, perfil: 'ADMIN' }
+  });
+  return !!acesso;
+}
+
 // Garante que o usuário logado tem acesso à empresa da URL; senão, manda de volta
 // para a seleção de empresa. Retorna o perfil de acesso junto (para checar permissões).
 export async function exigirAcessoEmpresa(empresaId: string) {
