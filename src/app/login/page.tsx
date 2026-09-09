@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Rackmap from '@/components/Rackmap';
 import LoginForm from './LoginForm';
 
@@ -6,9 +7,10 @@ export default function LoginPage() {
     <div id="view-login">
       <div className="login-visual">
         <div className="brand-mark">
+          <Image src="/logo-brasmeg.png" alt="Brasmeg" width={32} height={32} />
           Warehouse<span>One</span>
         </div>
-        <Rackmap cols={24} rows={16} density={0.35} style={{ opacity: 0.55 }} />
+        <Rackmap cols={24} rows={16} density={0.35} style={{ opacity: 0.4 }} />
         <div className="caption">
           <div className="eyebrow">Bloco · Rua · Face</div>
           <h1>Cada tambor tem um endereço. Cada endereço, um dono.</h1>
