@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-type Produto = { id: string; sku: string; descricao: string; tbPorPallet: number };
+type Produto = { id: string; sku: string; descricao: string; tbPorPallet: number; unidadeMedida: string };
 type EstoqueItem = {
   id: string;
   lote: string;
@@ -11,8 +11,13 @@ type EstoqueItem = {
   rua: string;
   face: string;
   produtoId: string;
-  produto: { sku: string };
+  produto: { sku: string; unidadeMedida: string };
 };
+
+function fmtQtd(qtd: number, unidade: string) {
+  const valor = unidade === 'KG' ? qtd.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : qtd;
+  return `${valor} ${unidade === 'KG' ? 'kg' : 'un.'}`;
+}
 
 export default function MovimentacaoTabs({
   produtos,
@@ -35,6 +40,7 @@ export default function MovimentacaoTabs({
   // Produto selecionado em cada aba, só pra filtrar a lista de lotes — não é enviado no form.
   const [produtoTransfId, setProdutoTransfId] = useState('');
   const [produtoSaidaId, setProdutoSaidaId] = useState('');
+  const [produtoEntradaId, setProdutoEntradaId] = useState(produtos[0]?.id || '');
 
   // Lista de produtos que têm estoque disponível, sem repetir.
   const produtosComEstoque = useMemo(() => {
@@ -53,6 +59,8 @@ export default function MovimentacaoTabs({
     () => estoques.filter((e) => !produtoSaidaId || e.produtoId === produtoSaidaId),
     [estoques, produtoSaidaId]
   );
+
+  const unidadeEntrada = produtos.find((p) => p.id === produtoEntradaId)?.unidadeMedida || 'UN';
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
@@ -128,10 +136,15 @@ export default function MovimentacaoTabs({
           <div className="form-grid g2">
             <div className="field">
               <label>Produto / SKU</label>
-              <select name="produtoId" required>
+              <select
+                name="produtoId"
+                required
+                value={produtoEntradaId}
+                onChange={(e) => setProdutoEntradaId(e.target.value)}
+              >
                 {produtos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.sku} — {p.descricao}
+                    {p.sku} — {p.descricao} ({p.unidadeMedida === 'KG' ? 'kg' : 'un.'})
                   </option>
                 ))}
               </select>
@@ -151,8 +164,8 @@ export default function MovimentacaoTabs({
               <input name="validade" type="date" />
             </div>
             <div className="field">
-              <label>Quantidade (unidade)</label>
-              <input name="quantidadeTb" type="number" placeholder="0" required />
+              <label>Quantidade ({unidadeEntrada === 'KG' ? 'kg' : 'unidade'})</label>
+              <input name="quantidadeTb" type="number" step="any" placeholder="0" required />
             </div>
             <div className="field">
               <label>Observação</label>
@@ -210,7 +223,7 @@ export default function MovimentacaoTabs({
               <select name="estoqueOrigemId" required key={produtoTransfId}>
                 {lotesTransferencia.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
+                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
                   </option>
                 ))}
               </select>
@@ -218,8 +231,8 @@ export default function MovimentacaoTabs({
           </div>
           <div className="form-grid g2">
             <div className="field">
-              <label>Quantidade (unidade)</label>
-              <input name="quantidadeTb" type="number" placeholder="0" required />
+              <label>Quantidade</label>
+              <input name="quantidadeTb" type="number" step="any" placeholder="0" required />
             </div>
           </div>
           <div className="form-grid g3">
@@ -268,14 +281,14 @@ export default function MovimentacaoTabs({
               <select name="estoqueId" required key={produtoSaidaId}>
                 {lotesSaida.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
+                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
                   </option>
                 ))}
               </select>
             </div>
             <div className="field">
-              <label>Quantidade (unidade)</label>
-              <input name="quantidadeTb" type="number" placeholder="0" required />
+              <label>Quantidade</label>
+              <input name="quantidadeTb" type="number" step="any" placeholder="0" required />
             </div>
           </div>
           <div className="field">

@@ -30,7 +30,7 @@ export default async function HistoricoPage({ params }: { params: { empresaId: s
                 <th>Lote</th>
                 <th>De</th>
                 <th>Para</th>
-                <th>Unid.</th>
+                <th>Qtd</th>
                 <th>Operador</th>
                 <th></th>
               </tr>
@@ -51,7 +51,10 @@ export default async function HistoricoPage({ params }: { params: { empresaId: s
                   <td className="code">{h.lote}</td>
                   <td className="code">{h.origem ?? '—'}</td>
                   <td className="code">{h.destino ?? '—'}</td>
-                  <td>{h.quantidadeTb}</td>
+                  <td>
+                    {h.quantidadeTb.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}{' '}
+                    {h.produto.unidadeMedida === 'KG' ? 'kg' : 'un.'}
+                  </td>
                   <td>{h.operador}</td>
                   <td>
                     <ExcluirLancamentoButton action={excluirLancamento.bind(null, empresaId, h.id)} />

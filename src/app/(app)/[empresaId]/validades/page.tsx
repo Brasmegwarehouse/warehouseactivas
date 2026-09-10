@@ -49,7 +49,7 @@ export default async function ValidadesPage({ params }: { params: { empresaId: s
                 <th>SKU</th>
                 <th>Lote</th>
                 <th>Endereço</th>
-                <th>Qtd (TB)</th>
+                <th>Qtd</th>
                 <th>Validade</th>
                 <th>Status</th>
               </tr>
@@ -71,7 +71,10 @@ export default async function ValidadesPage({ params }: { params: { empresaId: s
                     <td className="code">
                       {e.bloco}·{e.rua}·{e.face}
                     </td>
-                    <td>{e.quantidadeTb}</td>
+                    <td>
+                      {e.quantidadeTb.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}{' '}
+                      {e.produto.unidadeMedida === 'KG' ? 'kg' : 'un.'}
+                    </td>
                     <td className="code">{e.validade!.toLocaleDateString('pt-BR')}</td>
                     <td>
                       <span className={`tag ${status}`}>{TAG[status]}</span>

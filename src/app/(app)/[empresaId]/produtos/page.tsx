@@ -47,9 +47,18 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
               </select>
             </div>
             <div className="field">
+              <label>Controlar estoque por</label>
+              <select name="unidadeMedida" defaultValue="UN">
+                <option value="UN">Unidade (contagem — tambores, sacos, etc.)</option>
+                <option value="KG">Peso (kg — granel)</option>
+              </select>
+            </div>
+            <div className="field">
               <label>Capacidade (L)</label>
               <input name="capacidadeL" type="number" placeholder="200" />
             </div>
+          </div>
+          <div className="form-grid g3">
             <div className="field">
               <label>Quantidade por pallet</label>
               <input name="tbPorPallet" type="number" defaultValue={4} />
@@ -72,6 +81,7 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
                 <th>SKU</th>
                 <th>Descrição</th>
                 <th>Embalagem</th>
+                <th>Controle</th>
                 <th>Qtd/Pallet</th>
                 <th>Status</th>
               </tr>
@@ -79,7 +89,7 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
             <tbody>
               {produtos.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="empty">
+                  <td colSpan={6} className="empty">
                     Nenhum produto cadastrado ainda.
                   </td>
                 </tr>
@@ -89,7 +99,12 @@ export default async function ProdutosPage({ params }: { params: { empresaId: st
                   <td className="code">{p.sku}</td>
                   <td>{p.descricao}</td>
                   <td>{p.embalagem}</td>
-                  <td>{p.tbPorPallet}</td>
+                  <td>
+                    <span className={`tag ${p.unidadeMedida === 'KG' ? 'in' : 'ok'}`}>
+                      {p.unidadeMedida === 'KG' ? 'Peso (kg)' : 'Unidade'}
+                    </span>
+                  </td>
+                  <td>{p.unidadeMedida === 'KG' ? '—' : p.tbPorPallet}</td>
                   <td>
                     <span className={`tag ${p.ativo ? 'ok' : 'danger'}`}>
                       {p.ativo ? 'Ativo' : 'Inativo'}

@@ -19,7 +19,14 @@ export default async function DashboardPage({ params }: { params: { empresaId: s
     prisma.empresa.findUnique({ where: { id: empresaId } })
   ]);
 
-  const totalTb = estoques.reduce((s, e) => s + e.quantidadeTb, 0);
+  // Unidade e kg são grandezas diferentes, então os totais entram em cards separados.
+  const totalUnidades = estoques
+    .filter((e) => e.produto.unidadeMedida !== 'KG')
+    .reduce((s, e) => s + e.quantidadeTb, 0);
+  const totalKg = estoques
+    .filter((e) => e.produto.unidadeMedida === 'KG')
+    .reduce((s, e) => s + e.quantidadeTb, 0);
+
   const enderecosOcupados = new Set(estoques.map((e) => formatarEndereco(e.bloco, e.rua, e.face))).size;
   const vencendo30d = estoques.filter((e) => statusValidade(e.validade) === 'warn').length;
 
@@ -38,9 +45,14 @@ export default async function DashboardPage({ params }: { params: { empresaId: s
 
       <div className="metrics">
         <div className="metric">
-          <div className="lbl">Estoque total</div>
-          <div className="val">{totalTb}</div>
-          <div className="unit">unidades</div>
+          <div className="lbl">Estoque em unidades</div>
+          <div className="val">{totalUnidades}</div>
+          <div className="unit">tambores, sacos, etc.</div>
+        </div>
+        <div className="metric">
+          <div className="lbl">Estoque em peso</div>
+          <div className="val">{totalKg.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</div>
+          <div className="unit">kg</div>
         </div>
         <div className="metric">
           <div className="lbl">Lotes em posição</div>
@@ -76,7 +88,7 @@ export default async function DashboardPage({ params }: { params: { empresaId: s
                   <th>SKU</th>
                   <th>Lote</th>
                   <th>De → Para</th>
-                  <th>Unid.</th>
+                  <th>Qtd</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,7 +108,10 @@ export default async function DashboardPage({ params }: { params: { empresaId: s
                     <td className="code">
                       {h.origem ?? '—'} → {h.destino ?? '—'}
                     </td>
-                    <td>{h.quantidadeTb}</td>
+                    <td>
+                      {h.quantidadeTb.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}{' '}
+                      {h.produto.unidadeMedida === 'KG' ? 'kg' : 'un.'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

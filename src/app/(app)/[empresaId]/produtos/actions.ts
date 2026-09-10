@@ -11,6 +11,7 @@ export async function criarProduto(empresaId: string, formData: FormData) {
   const descricao = String(formData.get('descricao') || '').trim();
   const familia = String(formData.get('familia') || '').trim() || null;
   const embalagem = String(formData.get('embalagem') || 'Tambor metálico');
+  const unidadeMedida = String(formData.get('unidadeMedida') || 'UN');
   const capacidadeL = Number(formData.get('capacidadeL') || 0) || null;
   const tbPorPallet = Number(formData.get('tbPorPallet') || 4);
 
@@ -19,7 +20,7 @@ export async function criarProduto(empresaId: string, formData: FormData) {
   }
 
   await prisma.produto.create({
-    data: { empresaId, sku, descricao, familia, embalagem, capacidadeL, tbPorPallet }
+    data: { empresaId, sku, descricao, familia, embalagem, unidadeMedida, capacidadeL, tbPorPallet }
   });
 
   revalidatePath(`/${empresaId}/produtos`);

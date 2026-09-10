@@ -9,8 +9,13 @@ type EstoqueItem = {
   bloco: string;
   rua: string;
   face: string;
-  produto: { sku: string };
+  produto: { sku: string; unidadeMedida: string };
 };
+
+function fmtQtd(qtd: number, unidade: string) {
+  const valor = unidade === 'KG' ? qtd.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : qtd;
+  return `${valor} ${unidade === 'KG' ? 'kg' : 'un.'}`;
+}
 
 export default function AvariaForm({
   estoques,
@@ -72,14 +77,14 @@ export default function AvariaForm({
             <select name="estoqueId" required>
               {estoques.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.produto.sku} · {e.lote} · {e.bloco}·{e.rua}·{e.face} ({e.quantidadeTb} un.)
+                  {e.produto.sku} · {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
                 </option>
               ))}
             </select>
           </div>
           <div className="field">
-            <label>Quantidade (unidade)</label>
-            <input name="quantidadeTb" type="number" placeholder="0" required />
+            <label>Quantidade</label>
+            <input name="quantidadeTb" type="number" step="any" placeholder="0" required />
           </div>
           <div className="field">
             <label>Causa</label>

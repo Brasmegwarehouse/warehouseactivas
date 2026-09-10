@@ -28,7 +28,7 @@ export default async function ConsultaPage({ params }: { params: { empresaId: st
                 <th>Lote</th>
                 <th>Validade</th>
                 <th>Endereço</th>
-                <th>Qtd (TB)</th>
+                <th>Qtd</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -51,7 +51,10 @@ export default async function ConsultaPage({ params }: { params: { empresaId: st
                     <td className="code">
                       {e.bloco}·{e.rua}·{e.face}
                     </td>
-                    <td>{e.quantidadeTb}</td>
+                    <td>
+                      {e.quantidadeTb.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}{' '}
+                      {e.produto.unidadeMedida === 'KG' ? 'kg' : 'un.'}
+                    </td>
                     <td>
                       <span className={`tag ${status}`}>{TAG[status]}</span>
                     </td>
