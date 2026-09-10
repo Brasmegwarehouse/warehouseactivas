@@ -72,6 +72,7 @@ model Produto {
   descricao    String
   familia      String?
   embalagem    String   @default("Tambor metálico")
+  unidadeMedida String  @default("UN") // "UN" (unidade/tambor) ou "KG" (peso a granel)
   capacidadeL  Float?
   tbPorPallet  Int      @default(4)
   cubagemM3    Float?
@@ -95,7 +96,7 @@ model Estoque {
   lote             String
   dataFabricacao   DateTime?
   validade         DateTime?
-  quantidadeTb     Int
+  quantidadeTb     Float
   bloco            String
   rua              String
   face             String
@@ -115,7 +116,7 @@ model Historico {
   produtoId     String
   lote          String
   tipo          TipoMovimentacao
-  quantidadeTb  Int
+  quantidadeTb  Float
   origem        String?
   destino       String?
   operador      String
@@ -132,7 +133,7 @@ model Avaria {
   produto       Produto  @relation(fields: [produtoId], references: [id])
   produtoId     String
   lote          String
-  quantidadeTb  Int
+  quantidadeTb  Float
   causa         String
   operador      String
   observacao    String?
