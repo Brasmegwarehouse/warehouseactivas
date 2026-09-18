@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -22,11 +23,30 @@ export async function registrarEntrada(empresaId: string, formData: FormData) {
     throw new Error('Produto, lote e quantidade são obrigatórios.');
   }
 
-  await prisma.$transaction([
-    prisma.estoque.create({
-      data: { empresaId, produtoId, lote, quantidadeTb, bloco, rua, face, dataFabricacao, validade }
-    }),
-    prisma.historico.create({
+  await prisma.$transaction(async (tx) => {
+    // Se já existe esse mesmo lote desse produto nesse endereço exato, soma na
+    // quantidade existente em vez de criar um registro duplicado.
+    const existente = await tx.estoque.findFirst({
+      where: { empresaId, produtoId, lote, bloco, rua, face }
+    });
+
+    if (existente) {
+      await tx.estoque.update({
+        where: { id: existente.id },
+        data: {
+          quantidadeTb: existente.quantidadeTb + quantidadeTb,
+          // mantém validade/fabricação já cadastradas; só preenche se estava vazio
+          validade: existente.validade ?? validade,
+          dataFabricacao: existente.dataFabricacao ?? dataFabricacao
+        }
+      });
+    } else {
+      await tx.estoque.create({
+        data: { empresaId, produtoId, lote, quantidadeTb, bloco, rua, face, dataFabricacao, validade }
+      });
+    }
+
+    await tx.historico.create({
       data: {
         empresaId,
         produtoId,
@@ -37,8 +57,8 @@ export async function registrarEntrada(empresaId: string, formData: FormData) {
         operador: usuario.name,
         observacao
       }
-    })
-  ]);
+    });
+  });
 
   revalidatePath(`/${empresaId}/dashboard`);
   revalidatePath(`/${empresaId}/consulta`);
@@ -62,25 +82,46 @@ export async function registrarTransferencia(empresaId: string, formData: FormDa
   const enderecoOrigem = formatarEndereco(origem.bloco, origem.rua, origem.face);
   const enderecoDestino = formatarEndereco(blocoDestino, ruaDestino, faceDestino);
 
-  await prisma.$transaction([
-    prisma.estoque.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.estoque.update({
       where: { id: origem.id },
       data: { quantidadeTb: origem.quantidadeTb - quantidadeTb }
-    }),
-    prisma.estoque.create({
-      data: {
+    });
+
+    // Mesma lógica de junção: se o destino já tem esse lote desse produto, soma.
+    const existenteDestino = await tx.estoque.findFirst({
+      where: {
         empresaId,
         produtoId: origem.produtoId,
         lote: origem.lote,
-        quantidadeTb,
         bloco: blocoDestino,
         rua: ruaDestino,
-        face: faceDestino,
-        dataFabricacao: origem.dataFabricacao,
-        validade: origem.validade
+        face: faceDestino
       }
-    }),
-    prisma.historico.create({
+    });
+
+    if (existenteDestino) {
+      await tx.estoque.update({
+        where: { id: existenteDestino.id },
+        data: { quantidadeTb: existenteDestino.quantidadeTb + quantidadeTb }
+      });
+    } else {
+      await tx.estoque.create({
+        data: {
+          empresaId,
+          produtoId: origem.produtoId,
+          lote: origem.lote,
+          quantidadeTb,
+          bloco: blocoDestino,
+          rua: ruaDestino,
+          face: faceDestino,
+          dataFabricacao: origem.dataFabricacao,
+          validade: origem.validade
+        }
+      });
+    }
+
+    await tx.historico.create({
       data: {
         empresaId,
         produtoId: origem.produtoId,
@@ -91,8 +132,8 @@ export async function registrarTransferencia(empresaId: string, formData: FormDa
         destino: enderecoDestino,
         operador: usuario.name
       }
-    })
-  ]);
+    });
+  });
 
   revalidatePath(`/${empresaId}/dashboard`);
   revalidatePath(`/${empresaId}/consulta`);
