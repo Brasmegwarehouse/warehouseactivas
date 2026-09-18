@@ -19,6 +19,13 @@ function fmtQtd(qtd: number, unidade: string) {
   return `${valor} ${unidade === 'KG' ? 'kg' : 'un.'}`;
 }
 
+function normalizar(s: string) {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 export default function MovimentacaoTabs({
   produtos,
   estoques,
@@ -42,6 +49,10 @@ export default function MovimentacaoTabs({
   const [produtoSaidaId, setProdutoSaidaId] = useState('');
   const [produtoEntradaId, setProdutoEntradaId] = useState(produtos[0]?.id || '');
 
+  // Busca por texto (SKU ou lote), pra funcionar bem no celular sem precisar rolar o select.
+  const [buscaTransf, setBuscaTransf] = useState('');
+  const [buscaSaida, setBuscaSaida] = useState('');
+
   // Lista de produtos que têm estoque disponível, sem repetir.
   const produtosComEstoque = useMemo(() => {
     const mapa = new Map<string, { id: string; sku: string }>();
@@ -51,13 +62,23 @@ export default function MovimentacaoTabs({
     return Array.from(mapa.values()).sort((a, b) => a.sku.localeCompare(b.sku));
   }, [estoques]);
 
+  function filtrarLotes(lista: EstoqueItem[], produtoId: string, busca: string) {
+    const buscaNorm = normalizar(busca.trim());
+    return lista.filter((e) => {
+      if (produtoId && e.produtoId !== produtoId) return false;
+      if (!buscaNorm) return true;
+      const alvo = normalizar(`${e.produto.sku} ${e.lote}`);
+      return alvo.includes(buscaNorm);
+    });
+  }
+
   const lotesTransferencia = useMemo(
-    () => estoques.filter((e) => !produtoTransfId || e.produtoId === produtoTransfId),
-    [estoques, produtoTransfId]
+    () => filtrarLotes(estoques, produtoTransfId, buscaTransf),
+    [estoques, produtoTransfId, buscaTransf]
   );
   const lotesSaida = useMemo(
-    () => estoques.filter((e) => !produtoSaidaId || e.produtoId === produtoSaidaId),
-    [estoques, produtoSaidaId]
+    () => filtrarLotes(estoques, produtoSaidaId, buscaSaida),
+    [estoques, produtoSaidaId, buscaSaida]
   );
 
   const unidadeEntrada = produtos.find((p) => p.id === produtoEntradaId)?.unidadeMedida || 'UN';
@@ -81,6 +102,8 @@ export default function MovimentacaoTabs({
       form.reset();
       setProdutoTransfId('');
       setProdutoSaidaId('');
+      setBuscaTransf('');
+      setBuscaSaida('');
       window.setTimeout(() => setSucesso(''), 4000);
     } catch (e: any) {
       setErro(e?.message || 'Erro ao registrar movimentação.');
@@ -206,10 +229,7 @@ export default function MovimentacaoTabs({
           <div className="form-grid g2">
             <div className="field">
               <label>Produto / SKU</label>
-              <select
-                value={produtoTransfId}
-                onChange={(e) => setProdutoTransfId(e.target.value)}
-              >
+              <select value={produtoTransfId} onChange={(e) => setProdutoTransfId(e.target.value)}>
                 <option value="">Todos os produtos</option>
                 {produtosComEstoque.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -219,17 +239,28 @@ export default function MovimentacaoTabs({
               </select>
             </div>
             <div className="field">
-              <label>Lote em estoque (origem)</label>
-              <select name="estoqueOrigemId" required key={produtoTransfId}>
+              <label>Buscar por SKU ou lote</label>
+              <input
+                type="text"
+                inputMode="search"
+                placeholder="Digite pra filtrar..."
+                value={buscaTransf}
+                onChange={(e) => setBuscaTransf(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="form-grid g2">
+            <div className="field">
+              <label>Lote em estoque (origem) — {lotesTransferencia.length} encontrado(s)</label>
+              <select name="estoqueOrigemId" required key={`${produtoTransfId}-${lotesTransferencia.length}`}>
+                {lotesTransferencia.length === 0 && <option value="">Nenhum lote encontrado</option>}
                 {lotesTransferencia.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
+                    {e.produto.sku} · {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
                   </option>
                 ))}
               </select>
             </div>
-          </div>
-          <div className="form-grid g2">
             <div className="field">
               <label>Quantidade</label>
               <input name="quantidadeTb" type="number" step="any" placeholder="0" required />
@@ -264,7 +295,7 @@ export default function MovimentacaoTabs({
 
       {tab === 'saida' && (
         <form onSubmit={(e) => handleSubmit(e, saidaAction)}>
-          <div className="form-grid g3">
+          <div className="form-grid g2">
             <div className="field">
               <label>Produto / SKU</label>
               <select value={produtoSaidaId} onChange={(e) => setProdutoSaidaId(e.target.value)}>
@@ -277,11 +308,24 @@ export default function MovimentacaoTabs({
               </select>
             </div>
             <div className="field">
-              <label>Lote em estoque</label>
-              <select name="estoqueId" required key={produtoSaidaId}>
+              <label>Buscar por SKU ou lote</label>
+              <input
+                type="text"
+                inputMode="search"
+                placeholder="Digite pra filtrar..."
+                value={buscaSaida}
+                onChange={(e) => setBuscaSaida(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="form-grid g3">
+            <div className="field">
+              <label>Lote em estoque — {lotesSaida.length} encontrado(s)</label>
+              <select name="estoqueId" required key={`${produtoSaidaId}-${lotesSaida.length}`}>
+                {lotesSaida.length === 0 && <option value="">Nenhum lote encontrado</option>}
                 {lotesSaida.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
+                    {e.produto.sku} · {e.lote} · {e.bloco}·{e.rua}·{e.face} ({fmtQtd(e.quantidadeTb, e.produto.unidadeMedida)})
                   </option>
                 ))}
               </select>
@@ -290,10 +334,10 @@ export default function MovimentacaoTabs({
               <label>Quantidade</label>
               <input name="quantidadeTb" type="number" step="any" placeholder="0" required />
             </div>
-          </div>
-          <div className="field">
-            <label>Observação / NF</label>
-            <input name="observacao" placeholder="NF 123456" />
+            <div className="field">
+              <label>Observação / NF</label>
+              <input name="observacao" placeholder="NF 123456" />
+            </div>
           </div>
           <div className="btn-row">
             <button className="btn primary" type="submit" disabled={enviando}>
